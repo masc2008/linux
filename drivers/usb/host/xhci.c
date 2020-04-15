@@ -28,6 +28,9 @@
 
 #define	PORT_WAKE_BITS	(PORT_WKOC_E | PORT_WKDISC_E | PORT_WKCONN_E)
 
+int trace_slotid;
+void *trace_ctx;
+
 /* Some 0.95 hardware can't handle the chain bit on a Link TRB being cleared */
 static int link_quirk;
 module_param(link_quirk, int, S_IRUGO | S_IWUSR);
@@ -499,6 +502,7 @@ static int xhci_init(struct usb_hcd *hcd)
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 	int retval = 0;
 
+	printk("%s, hma\n", __func__);
 	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "xhci_init");
 	spin_lock_init(&xhci->lock);
 	if (xhci->hci_version == 0x95 && link_quirk) {
@@ -1722,6 +1726,18 @@ static int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
 
 	xhci_debugfs_create_endpoint(xhci, virt_dev, ep_index);
 
+	if (udev && (udev->descriptor.idProduct == VENDOR_TRACE)) {
+		trace_slotid = udev->slot_id;
+		if (xhci->devs[udev->slot_id])
+			trace_ctx = xhci->devs[udev->slot_id]->in_ctx;
+	}
+	if (udev) {
+		printk("hma %s, device %04x:%04x, slot_id %d\n",
+		       __func__, udev->descriptor.idVendor,
+		       udev->descriptor.idProduct,
+		       udev->slot_id);
+	}
+
 	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
 			(unsigned int) ep->desc.bEndpointAddress,
 			udev->slot_id,
@@ -2596,6 +2612,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
 	slot_ctx = xhci_get_slot_ctx(xhci, command->in_ctx);
 	trace_xhci_configure_endpoint(slot_ctx);
 
+	//printk()
 	if (!ctx_change)
 		ret = xhci_queue_configure_endpoint(xhci, command,
 				command->in_ctx->dma,
@@ -2882,12 +2899,29 @@ void xhci_cleanup_stalled_ring(struct xhci_hcd *xhci, unsigned int ep_index,
  * Context: in_interrupt
  */
 
+struct ep_device {
+	struct usb_endpoint_descriptor *desc;
+	struct usb_device *udev;
+	struct device dev;
+};
 static void xhci_endpoint_reset(struct usb_hcd *hcd,
 		struct usb_host_endpoint *ep)
 {
 	struct xhci_hcd *xhci;
+	struct usb_device *udev = NULL;
 
 	xhci = hcd_to_xhci(hcd);
+
+	if (ep->ep_dev && (ep->ep_dev->udev))
+		udev = ep->ep_dev->udev;
+	if (udev && (udev->descriptor.idProduct == VENDOR_TRACE))
+		trace_slotid = udev->slot_id;
+	if (udev) {
+		printk("hma %s, device %04x:%04x, slot_id %d\n",
+		       __func__, udev->descriptor.idVendor,
+		       udev->descriptor.idProduct,
+		       trace_slotid);
+	}
 
 	/*
 	 * We might need to implement the config ep cmd in xhci 4.8.1 note:

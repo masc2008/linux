@@ -59,6 +59,8 @@
 #include "xhci-trace.h"
 #include "xhci-mtk.h"
 
+extern int trace_slotid;
+extern void *trace_ctx;
 /*
  * Returns zero if the TRB isn't in this segment, otherwise it returns the DMA
  * address of the TRB.
@@ -3925,6 +3927,11 @@ static int queue_command(struct xhci_hcd *xhci, struct xhci_command *cmd,
 
 	list_add_tail(&cmd->cmd_list, &xhci->cmd_list);
 
+	if (trace_ctx && (cmd->in_ctx == trace_ctx)) {
+		printk("dev %d, trb_command: 0x%08x:%08x:%08x:%08x\n",
+		       ((field4 & TRB_TYPE_BITMASK) >> 10), field1, field2,
+		       field3, field4);
+	}
 	queue_trb(xhci, xhci->cmd_ring, false, field1, field2, field3,
 			field4 | xhci->cmd_ring->cycle_state);
 	return 0;

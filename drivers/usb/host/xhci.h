@@ -22,6 +22,8 @@
 #include	"xhci-ext-caps.h"
 #include "pci-quirks.h"
 
+#define VENDOR_TRACE 0x085e
+
 /* xHCI PCI Configuration Registers */
 #define XHCI_SBRN_OFFSET	(0x60)
 
