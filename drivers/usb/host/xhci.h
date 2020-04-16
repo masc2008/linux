@@ -1587,6 +1587,9 @@ struct xhci_ring {
 	enum xhci_ring_type	type;
 	bool			last_td_was_short;
 	struct radix_tree_root	*trb_address_map;
+	int slot_id;
+	int ep_index;
+	int print_cnts;
 };
 
 struct xhci_erst_entry {

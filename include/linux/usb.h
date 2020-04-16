@@ -76,6 +76,7 @@ struct usb_host_endpoint {
 	int extralen;
 	int enabled;
 	int streams;
+	struct usb_device *udev;
 };
 
 /* host-side wrapper for one interface setting's parsed descriptors */

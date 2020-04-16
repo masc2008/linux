@@ -715,6 +715,7 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,
 	ep_ctx = xhci_get_ep_ctx(xhci, vdev->out_ctx, ep_index);
 	trace_xhci_handle_cmd_stop_ep(ep_ctx);
 
+	printk("hma %s, %d, slot %d, %d\n", __func__, __LINE__, slot_id, ep_index);
 	ep = &xhci->devs[slot_id]->eps[ep_index];
 	last_unlinked_td = list_last_entry(&ep->cancelled_td_list,
 			struct xhci_td, cancelled_td_list);
@@ -1827,6 +1828,7 @@ static void xhci_cleanup_halted_endpoint(struct xhci_hcd *xhci,
 	if (!command)
 		return;
 
+	printk("hma %s, %d, slot %d, %d\n", __func__, __LINE__, slot_id, ep_index);
 	ep->ep_state |= EP_HALTED;
 
 	xhci_queue_reset_ep(xhci, command, slot_id, ep_index, reset_type);
@@ -2828,6 +2830,13 @@ static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
 	trb->field[2] = cpu_to_le32(field3);
 	trb->field[3] = cpu_to_le32(field4);
 
+	if ((ring->print_cnts) && (ring->slot_id == trace_slotid)) {
+		printk("id %d, %d, %d, %08x:%08x:%08x:%08x\n",
+		       ring->slot_id, ring->ep_index,
+		       ring->print_cnts--,
+		       trb->field[0], trb->field[1],
+		       trb->field[2], trb->field[3]);
+	}
 	trace_xhci_queue_trb(ring, trb);
 
 	inc_enq(xhci, ring, more_trbs_coming);
@@ -3927,8 +3936,8 @@ static int queue_command(struct xhci_hcd *xhci, struct xhci_command *cmd,
 
 	list_add_tail(&cmd->cmd_list, &xhci->cmd_list);
 
-	if (trace_ctx && (cmd->in_ctx == trace_ctx)) {
-		printk("dev %d, trb_command: 0x%08x:%08x:%08x:%08x\n",
+	if (trace_slotid && (trace_slotid == TRB_TO_SLOT_ID(field4))) {
+		printk("hma trb_command: type %d,  0x%08x:%08x:%08x:%08x\n",
 		       ((field4 & TRB_TYPE_BITMASK) >> 10), field1, field2,
 		       field3, field4);
 	}

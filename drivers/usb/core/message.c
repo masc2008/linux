@@ -1288,6 +1288,7 @@ void usb_enable_endpoint(struct usb_device *dev, struct usb_host_endpoint *ep,
 	int is_out = usb_endpoint_dir_out(&ep->desc);
 	int is_control = usb_endpoint_xfer_control(&ep->desc);
 
+	ep->udev = dev;
 	if (reset_ep)
 		usb_hcd_reset_endpoint(dev, ep);
 	if (is_out || is_control)
