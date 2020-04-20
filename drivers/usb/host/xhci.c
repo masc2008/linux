@@ -2628,6 +2628,9 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
 		       ep_ctx->ep_info2, (int)ep_ctx->deq, ep_ctx->tx_info);
 		out_ep_ctx = xhci_get_ep_ctx(xhci, virt_dev->out_ctx, 2);
 		ep_ctx = out_ep_ctx;
+		slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->out_ctx);
+		printk("out slot_info %08x:%08x:%08x:%x\n", slot_ctx->dev_info,
+		       slot_ctx->dev_info2, slot_ctx->tt_info, slot_ctx->dev_state);
 		if (ep_ctx)
 			printk("out_ep_info %08x:%08x:%08x:%08x\n", ep_ctx->ep_info,
 				ep_ctx->ep_info2, (int)ep_ctx->deq, ep_ctx->tx_info);
@@ -4680,7 +4683,7 @@ static int xhci_enable_usb3_lpm_timeout(struct usb_hcd *hcd,
 		hub_encoded_timeout = USB3_LPM_DISABLED;
 		mel = 0;
 	}
-
+	printk("%s_%d: state %d, mel %d\n", __func__, __LINE__, state, mel);
 	ret = xhci_change_max_exit_latency(xhci, udev, mel);
 	if (ret)
 		return ret;
@@ -4699,6 +4702,7 @@ static int xhci_disable_usb3_lpm_timeout(struct usb_hcd *hcd,
 		return 0;
 
 	mel = calculate_max_exit_latency(udev, state, USB3_LPM_DISABLED);
+	printk("%s_%d: state %d, mel %d\n", __func__, __LINE__, state, mel);
 	return xhci_change_max_exit_latency(xhci, udev, mel);
 }
 #else /* CONFIG_PM */

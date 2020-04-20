@@ -362,6 +362,12 @@ static void usb_set_lpm_parameters(struct usb_device *udev)
 	/* Now that we've got PEL, calculate SEL. */
 	usb_set_lpm_sel(udev, &udev->u1_params);
 	usb_set_lpm_sel(udev, &udev->u2_params);
+	printk("%s:%x:%x, desc %x:%x:%x:%x\n", __func__, udev->descriptor.idVendor,
+	       udev->descriptor.idProduct, udev_u1_del, udev_u2_del, hub_u1_del, hub_u2_del);
+	struct usb3_lpm_parameters *ps = &udev->u1_params;
+	printk("u1 params: %x:%x:%x:%x\n", ps->mel, ps->pel, ps->sel, ps->timeout);
+	ps = &udev->u2_params;
+	printk("u1 params: %x:%x:%x:%x\n", ps->mel, ps->pel, ps->sel, ps->timeout);
 }
 
 /* USB 2.0 spec Section 11.24.4.5 */
@@ -3803,6 +3809,8 @@ static int usb_set_device_initiated_lpm(struct usb_device *udev,
 				0, NULL, 0,
 				USB_CTRL_SET_TIMEOUT);
 	}
+	printk("%s:%d, ret %d, state %d, %d, on dev %04x:%0x\n", __func__, __LINE__, ret,
+	       state, enable, udev->descriptor.idVendor, udev->descriptor.idProduct);
 	if (ret < 0) {
 		dev_warn(&udev->dev, "%s of device-initiated %s failed.\n",
 				enable ? "Enable" : "Disable",
@@ -3842,6 +3850,8 @@ static int usb_set_lpm_timeout(struct usb_device *udev,
 	ret = set_port_feature(udev->parent,
 			USB_PORT_LPM_TIMEOUT(timeout) | udev->portnum,
 			feature);
+	printk("%s:%d, ret %d, state %d, %d, on dev %04x:%0x\n", __func__, __LINE__, ret,
+	       state, feature, udev->descriptor.idVendor, udev->descriptor.idProduct);
 	if (ret < 0) {
 		dev_warn(&udev->dev, "Failed to set %s timeout to 0x%x,"
 				"error code %i\n", usb3_lpm_names[state],
@@ -3878,6 +3888,7 @@ static void usb_enable_link_state(struct usb_hcd *hcd, struct usb_device *udev,
 	 * U1 or U2, it's probably lying.  Assume it doesn't implement that link
 	 * state.
 	 */
+	printk("hma %s:%d: state %d %d, %d\n", __func__, __LINE__, state, u1_mel, u2_mel);
 	if ((state == USB3_LPM_U1 && u1_mel == 0) ||
 			(state == USB3_LPM_U2 && u2_mel == 0))
 		return;
@@ -4571,6 +4582,7 @@ hub_port_init(struct usb_hub *hub, struct usb_device *udev, int port1,
 		 * authorization will assign the final address.
 		 */
 		if (udev->wusb == 0) {
+			printk("hma %s, %d\n", __func__, __LINE__);
 			for (operations = 0; operations < SET_ADDRESS_TRIES; ++operations) {
 				retval = hub_set_address(udev, devnum);
 				if (retval >= 0)
@@ -4586,8 +4598,8 @@ hub_port_init(struct usb_hub *hub, struct usb_device *udev, int port1,
 			if (udev->speed >= USB_SPEED_SUPER) {
 				devnum = udev->devnum;
 				dev_info(&udev->dev,
-						"%s SuperSpeed%s USB device number %d using %s\n",
-						(udev->config) ? "reset" : "new",
+						"%d, %s SuperSpeed%s USB device number %d using %s\n",
+						__LINE__, (udev->config) ? "reset" : "new",
 					 (udev->speed == USB_SPEED_SUPER_PLUS) ? "Plus" : "",
 					 devnum, driver_name);
 			}
