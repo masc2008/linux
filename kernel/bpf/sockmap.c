@@ -44,6 +44,7 @@
 #define SOCK_CREATE_FLAG_MASK \
 	(BPF_F_NUMA_NODE | BPF_F_RDONLY | BPF_F_WRONLY)
 
+#define KLOG(fmt, ...) printk("%s:%d: ", fmt, __func__, __LINE__, ##__VA_ARGS__)
 struct bpf_stab {
 	struct bpf_map map;
 	struct sock **sock_map;
@@ -524,6 +525,7 @@ static struct bpf_map *sock_map_alloc(union bpf_attr *attr)
 	u64 cost;
 	int err;
 
+	KLOG("\n");
 	if (!capable(CAP_NET_ADMIN))
 		return ERR_PTR(-EPERM);
 
@@ -630,6 +632,7 @@ static int sock_map_get_next_key(struct bpf_map *map, void *key, void *next_key)
 	u32 i = key ? *(u32 *)key : U32_MAX;
 	u32 *next = (u32 *)next_key;
 
+	KLOG("\n");
 	if (i >= stab->map.max_entries) {
 		*next = 0;
 		return 0;
@@ -864,6 +867,7 @@ int sock_map_prog(struct bpf_map *map, struct bpf_prog *prog, u32 type)
 
 static void *sock_map_lookup(struct bpf_map *map, void *key)
 {
+	KLOG("\n");
 	return NULL;
 }
 
@@ -875,6 +879,7 @@ static int sock_map_update_elem(struct bpf_map *map,
 	struct socket *socket;
 	int err;
 
+	KLOG("\n");
 	socket = sockfd_lookup(fd, &err);
 	if (!socket)
 		return err;

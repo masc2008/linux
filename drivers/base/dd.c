@@ -725,9 +725,14 @@ static int __device_attach(struct device *dev, bool allow_async)
 			goto out_unlock;
 		}
 		ret = device_bind_driver(dev);
-		if (ret == 0)
+		if (ret == 0) {
 			ret = 1;
-		else {
+			if (dev->driver) {
+				printk("%s, %d: hma %s, mod_name %s\n", __func__, __LINE__, 
+				       dev->driver->name,
+				       dev->driver->mod_name);
+			}
+		} else {
 			dev->driver = NULL;
 			ret = 0;
 		}

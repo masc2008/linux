@@ -18,6 +18,8 @@
 #include "bpf_lru_list.h"
 #include "map_in_map.h"
 
+#define KLOG(fmt, ...) printk("%s:%d: ", fmt, __func__, __LINE__, ##__VA_ARGS__)
+
 #define HTAB_CREATE_FLAG_MASK						\
 	(BPF_F_NO_PREALLOC | BPF_F_NO_COMMON_LRU | BPF_F_NUMA_NODE |	\
 	 BPF_F_RDONLY | BPF_F_WRONLY)
@@ -247,6 +249,7 @@ static int htab_map_alloc_check(union bpf_attr *attr)
 	BUILD_BUG_ON(offsetof(struct htab_elem, fnode.next) !=
 		     offsetof(struct htab_elem, hash_node.pprev));
 
+	KLOG("\n");
 	if (lru && !capable(CAP_SYS_ADMIN))
 		/* LRU implementation is much complicated than other
 		 * maps.  Hence, limit to CAP_SYS_ADMIN for now.
@@ -312,6 +315,7 @@ static struct bpf_map *htab_map_alloc(union bpf_attr *attr)
 	if (!htab)
 		return ERR_PTR(-ENOMEM);
 
+	KLOG("\n");
 	bpf_map_init_from_attr(&htab->map, attr);
 
 	if (percpu_lru) {
@@ -422,6 +426,7 @@ static struct htab_elem *lookup_elem_raw(struct hlist_nulls_head *head, u32 hash
 	struct hlist_nulls_node *n;
 	struct htab_elem *l;
 
+	KLOG("\n");
 	hlist_nulls_for_each_entry_rcu(l, n, head, hash_node)
 		if (l->hash == hash && !memcmp(&l->key, key, key_size))
 			return l;
@@ -440,6 +445,7 @@ static struct htab_elem *lookup_nulls_elem_raw(struct hlist_nulls_head *head,
 	struct hlist_nulls_node *n;
 	struct htab_elem *l;
 
+	KLOG("\n");
 again:
 	hlist_nulls_for_each_entry_rcu(l, n, head, hash_node)
 		if (l->hash == hash && !memcmp(&l->key, key, key_size))
@@ -468,6 +474,7 @@ static void *__htab_map_lookup_elem(struct bpf_map *map, void *key)
 
 	key_size = map->key_size;
 
+	KLOG("\n");
 	hash = htab_map_hash(key, key_size);
 
 	head = select_bucket(htab, hash);
@@ -481,6 +488,7 @@ static void *htab_map_lookup_elem(struct bpf_map *map, void *key)
 {
 	struct htab_elem *l = __htab_map_lookup_elem(map, key);
 
+	KLOG("\n");
 	if (l)
 		return l->key + round_up(map->key_size, 8);
 
@@ -503,6 +511,7 @@ static u32 htab_map_gen_lookup(struct bpf_map *map, struct bpf_insn *insn_buf)
 	struct bpf_insn *insn = insn_buf;
 	const int ret = BPF_REG_0;
 
+	KLOG("\n");
 	*insn++ = BPF_EMIT_CALL((u64 (*)(u64, u64, u64, u64, u64))__htab_map_lookup_elem);
 	*insn++ = BPF_JMP_IMM(BPF_JEQ, ret, 0, 1);
 	*insn++ = BPF_ALU64_IMM(BPF_ADD, ret,
@@ -515,6 +524,7 @@ static void *htab_lru_map_lookup_elem(struct bpf_map *map, void *key)
 {
 	struct htab_elem *l = __htab_map_lookup_elem(map, key);
 
+	KLOG("\n");
 	if (l) {
 		bpf_lru_node_set_ref(&l->lru_node);
 		return l->key + round_up(map->key_size, 8);
@@ -595,6 +605,7 @@ static int htab_map_get_next_key(struct bpf_map *map, void *key, void *next_key)
 
 	head = select_bucket(htab, hash);
 
+	KLOG("\n");
 	/* lookup the key */
 	l = lookup_nulls_elem_raw(head, hash, key, key_size, htab->n_buckets);
 
@@ -1271,6 +1282,7 @@ static int fd_htab_map_alloc_check(union bpf_attr *attr)
 {
 	if (attr->value_size != sizeof(u32))
 		return -EINVAL;
+	KLOG("\n");
 	return htab_map_alloc_check(attr);
 }
 
@@ -1348,6 +1360,7 @@ static struct bpf_map *htab_of_map_alloc(union bpf_attr *attr)
 		return map;
 	}
 
+	KLOG("\n");
 	map->inner_map_meta = inner_map_meta;
 
 	return map;
