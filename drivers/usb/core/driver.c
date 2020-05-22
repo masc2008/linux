@@ -561,6 +561,11 @@ int usb_driver_claim_interface(struct usb_driver *driver,
 	if (device_is_registered(dev))
 		retval = device_bind_driver(dev);
 
+	if (dev->driver) {
+		printk("%s, %d: hma %s, mod_name %s\n", __func__, __LINE__, 
+		       dev->driver->name,
+		       dev->driver->mod_name);
+	}
 	/* Attempt to re-enable USB3 LPM, if the disable was successful. */
 	if (!lpm_disable_error)
 		usb_unlocked_enable_lpm(udev);
@@ -600,6 +605,11 @@ void usb_driver_release_interface(struct usb_driver *driver,
 	/* Release via the driver core only if the interface
 	 * has already been registered
 	 */
+	if (dev->driver) {
+		printk("%s, %d: hma %s, mod_name %s\n", __func__, __LINE__, 
+		       dev->driver->name,
+		       dev->driver->mod_name);
+	}
 	if (device_is_registered(dev)) {
 		device_release_driver(dev);
 	} else {

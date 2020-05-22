@@ -1271,8 +1271,7 @@ static int xhci_check_maxpacket(struct xhci_hcd *xhci, unsigned int slot_id,
 		ctrl_ctx->add_flags = cpu_to_le32(EP0_FLAG);
 		ctrl_ctx->drop_flags = 0;
 
-	printk("hma %s, dev %d, %08x, %08x\n", __func__, slot_id,
-	       ctrl_ctx->drop_flags, ctrl_ctx->add_flags);
+	//printk("hma %s, dev %d, %08x, %08x\n", __func__, slot_id, ctrl_ctx->drop_flags, ctrl_ctx->add_flags);
 		ret = xhci_configure_endpoint(xhci, urb->dev, command,
 				true, false);
 
@@ -1672,11 +1671,8 @@ static int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
 		return 0;
 	}
 
-	if (udev) {
-		printk("hma %s, device %04x:%04x, slot_id %d\n",
-		       __func__, udev->descriptor.idVendor,
-		       udev->descriptor.idProduct,
-		       udev->slot_id);
+	if (0 && udev) {
+		//printk("hma %s, device %04x:%04x, slot_id %d\n", __func__, udev->descriptor.idVendor, udev->descriptor.idProduct, udev->slot_id);
 		trace_slotid = udev->slot_id;
 	}
 	ep_index = xhci_get_endpoint_index(&ep->desc);
@@ -2619,8 +2615,6 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
 	trace_xhci_configure_endpoint(slot_ctx);
 	ep_ctx = xhci_get_ep_ctx(xhci, virt_dev->in_ctx, 2);
 
-	printk("hma %s, dev %d, ctx %d, must %d, %08x, %08x\n", __func__, udev->slot_id,
-	       ctx_change, must_succeed, ctrl_ctx->drop_flags, ctrl_ctx->add_flags);
 	if ((udev->slot_id == trace_slotid) && (slot_ctx) && (ep_ctx)) {
 		printk("slot_info %08x:%08x:%08x:%x\n", slot_ctx->dev_info,
 		       slot_ctx->dev_info2, slot_ctx->tt_info, slot_ctx->dev_state);
@@ -2664,7 +2658,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
 		ret = xhci_evaluate_context_result(xhci, udev,
 						   &command->status);
 
-	if (ep_ctx)
+	if (0 && ep_ctx)
 		printk("out ep 2 %08x:%08x:%08x:%08x\n", ep_ctx->ep_info,
 			ep_ctx->ep_info2, (int)ep_ctx->deq, ep_ctx->tx_info);
 	if ((xhci->quirks & XHCI_EP_LIMIT_QUIRK)) {
@@ -2763,8 +2757,7 @@ static int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)
 		}
 	}
 
-	printk("hma %s, dev %d, %08x, %08x\n", __func__, udev->slot_id,
-	       ctrl_ctx->drop_flags, ctrl_ctx->add_flags);
+	//printk("hma %s, dev %d, %08x, %08x\n", __func__, udev->slot_id, ctrl_ctx->drop_flags, ctrl_ctx->add_flags);
 	ret = xhci_configure_endpoint(xhci, udev, command,
 			false, false);
 	if (ret)
@@ -2943,17 +2936,12 @@ static void xhci_endpoint_reset(struct usb_hcd *hcd,
 
 	xhci = hcd_to_xhci(hcd);
 
-	printk("hma %s, ep %x\n", __func__,
-	       ep->desc.bEndpointAddress);
 	if (ep->udev)
 		udev = ep->udev;
 	if (udev && (udev->descriptor.idProduct == VENDOR_TRACE))
 		trace_slotid = udev->slot_id;
 	if (udev) {
-		printk("hma %s, device %04x:%04x, slot_id %d\n",
-		       __func__, udev->descriptor.idVendor,
-		       udev->descriptor.idProduct,
-		       trace_slotid);
+		//printk("hma %s, device %04x:%04x, slot_id %d\n", __func__, udev->descriptor.idVendor, udev->descriptor.idProduct, trace_slotid);
 		slot_id = udev->slot_id;
 		if ((slot_id) && (slot_id == trace_slotid)) {
 			xdev = xhci->devs[slot_id];
@@ -2962,7 +2950,7 @@ static void xhci_endpoint_reset(struct usb_hcd *hcd,
 			ep_ring = xdev->eps[ep_index].ring;
 			printk("%s: %d, ep_index %d\n", __func__, __LINE__, ep_index);
 			if (ep_ring) {
-				ep_ring->print_cnts = 100;
+				//ep_ring->print_cnts = 100;
 				ep_ring->ep_index = ep_index;
 			}
 		}
@@ -4048,8 +4036,7 @@ static int __maybe_unused xhci_change_max_exit_latency(struct xhci_hcd *xhci,
 	xhci_dbg_trace(xhci, trace_xhci_dbg_context_change,
 			"Set up evaluate context for LPM MEL change.");
 
-	printk("hma %s, dev %d, %08x, %08x\n", __func__, udev->slot_id,
-	       ctrl_ctx->drop_flags, ctrl_ctx->add_flags);
+	//printk("hma %s, dev %d, %08x, %08x\n", __func__, udev->slot_id, ctrl_ctx->drop_flags, ctrl_ctx->add_flags);
 	/* Issue and wait for the evaluate context command. */
 	ret = xhci_configure_endpoint(xhci, udev, command,
 			true, true);

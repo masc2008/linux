@@ -715,7 +715,7 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,
 	ep_ctx = xhci_get_ep_ctx(xhci, vdev->out_ctx, ep_index);
 	trace_xhci_handle_cmd_stop_ep(ep_ctx);
 
-	printk("hma %s, %d, slot %d, %d\n", __func__, __LINE__, slot_id, ep_index);
+	//printk("hma %s, %d, slot %d, %d\n", __func__, __LINE__, slot_id, ep_index);
 	ep = &xhci->devs[slot_id]->eps[ep_index];
 	last_unlinked_td = list_last_entry(&ep->cancelled_td_list,
 			struct xhci_td, cancelled_td_list);
@@ -1828,7 +1828,7 @@ static void xhci_cleanup_halted_endpoint(struct xhci_hcd *xhci,
 	if (!command)
 		return;
 
-	printk("hma %s, %d, slot %d, %d\n", __func__, __LINE__, slot_id, ep_index);
+	//printk("hma %s, %d, slot %d, %d\n", __func__, __LINE__, slot_id, ep_index);
 	ep->ep_state |= EP_HALTED;
 
 	xhci_queue_reset_ep(xhci, command, slot_id, ep_index, reset_type);
