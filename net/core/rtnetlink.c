@@ -697,8 +697,6 @@ int rtnl_unicast(struct sk_buff *skb, struct net *net, u32 pid)
 {
 	struct sock *rtnl = net->rtnl;
 
-	printk("%s:%d, task %s\n",
-	       __func__, __LINE__, current->comm);
 	return nlmsg_unicast(rtnl, skb, pid);
 }
 EXPORT_SYMBOL(rtnl_unicast);
@@ -3172,9 +3170,6 @@ static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
 		min_ifinfo_dump_size = max_t(u16, min_ifinfo_dump_size,
 					     if_nlmsg_size(dev,
 						           ext_filter_mask));
-		printk("%s:%d, %s, min_dump_size %d\n",
-		       __func__, __LINE__,
-		       dev->name, min_ifinfo_dump_size);
 	}
 	rcu_read_unlock();
 
@@ -4551,10 +4546,7 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh,
 	int family;
 	int type;
 
-
 	type = nlh->nlmsg_type;
-	printk("%s:%d, netlink, type %d, %d\n", __func__, __LINE__,
-	       type, nlh->nlmsg_seq);
 	if (type > RTM_MAX)
 		return -EOPNOTSUPP;
 
@@ -4571,8 +4563,6 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh,
 		return -EPERM;
 
 	rcu_read_lock();
-	printk("%s:%d, netlink, type %d, %x\n", __func__, __LINE__,
-	       kind, nlh->nlmsg_flags);
 	if (kind == 2 && nlh->nlmsg_flags&NLM_F_DUMP) {
 		struct sock *rtnl;
 		rtnl_dumpit_func dumpit;
@@ -4611,8 +4601,6 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh,
 			 */
 			module_put(owner);
 		}
-		printk("%s:%d, netlink, err %d, dumpit %p\n", __func__, __LINE__,
-		       err, dumpit);
 		return err;
 	}
 
@@ -4631,9 +4619,6 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh,
 	}
 
 	flags = link->flags;
-	printk("%s:%d, netlink %s, flags %x, doit %p\n",
-	       __func__, __LINE__, current->comm,
-	       link->flags, link->doit);
 	if (flags & RTNL_FLAG_DOIT_UNLOCKED) {
 		doit = link->doit;
 		rcu_read_unlock();
@@ -4646,12 +4631,8 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh,
 
 	rtnl_lock();
 	link = rtnl_get_link(family, type);
-	if (link && link->doit) {
+	if (link && link->doit)
 		err = link->doit(skb, nlh, extack);
-		printk("%s:%d, netlink %s, doit %p\n",
-		       __func__, __LINE__, current->comm,
-		       link->doit);
-	}
 	rtnl_unlock();
 
 	module_put(owner);
@@ -4659,7 +4640,6 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh,
 	return err;
 
 out_unlock:
-	printk("%s, %d, %d\n", __func__, __LINE__, err);
 	rcu_read_unlock();
 	return err;
 
@@ -4670,14 +4650,11 @@ err_unlock:
 
 static void rtnetlink_rcv(struct sk_buff *skb)
 {
-	printk("%s:%d, netlink %s\n", __func__, __LINE__, current->comm);
 	netlink_rcv_skb(skb, &rtnetlink_rcv_msg);
 }
 
 static int rtnetlink_bind(struct net *net, int group)
 {
-	printk("%s:%d, netlink, group %d\n", __func__, __LINE__,
-	       group);
 	switch (group) {
 	case RTNLGRP_IPV4_MROUTE_R:
 	case RTNLGRP_IPV6_MROUTE_R:

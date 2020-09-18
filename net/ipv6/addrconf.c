@@ -5429,7 +5429,6 @@ static int inet6_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
 	rcu_read_lock();
 	for (h = s_h; h < NETDEV_HASHENTRIES; h++, s_idx = 0) {
 		idx = 0;
-		printk("%s:%d\n", __func__, __LINE__);
 		head = &net->dev_index_head[h];
 		hlist_for_each_entry_rcu(dev, head, index_hlist) {
 			if (idx < s_idx)
@@ -5451,7 +5450,6 @@ out:
 	cb->args[1] = idx;
 	cb->args[0] = h;
 
-	printk("%s:%d\n", __func__, __LINE__);
 	return skb->len;
 }
 

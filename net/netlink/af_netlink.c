@@ -1333,8 +1333,6 @@ retry:
 		kfree_skb(skb);
 		return PTR_ERR(sk);
 	}
-	if (strcmp(current->comm, "netlink_clt") == 0)
-		printk("netlink is kernel %d\n", netlink_is_kernel(sk));
 	if (netlink_is_kernel(sk))
 		return netlink_unicast_kernel(sk, skb, ssk);
 
@@ -1895,8 +1893,6 @@ static int netlink_sendmsg(struct socket *sock, struct msghdr *msg, size_t len)
 		goto out;
 	}
 
-	printk("%s, %d, nlk seq comm %s, 0x%x\n", __func__, __LINE__,
-	       current->comm, dst_group);
 	if (dst_group) {
 		refcount_inc(&skb->users);
 		netlink_broadcast(sk, skb, dst_portid, dst_group, GFP_KERNEL);
@@ -1921,8 +1917,7 @@ static int netlink_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
 
 	if (flags&MSG_OOB)
 		return -EOPNOTSUPP;
-	printk("++%s, %d, comm %s, %ld\n", __func__, __LINE__,
-	       current->comm, len);
+
 	copied = 0;
 
 	skb = skb_recv_datagram(sk, flags, noblock, &err);
@@ -1995,7 +1990,6 @@ static int netlink_recvmsg(struct socket *sock, struct msghdr *msg, size_t len,
 	scm_recv(sock, msg, &scm, flags);
 out:
 	netlink_rcv_wake(sk);
-//	printk("--%s, %d, comm %s\n", __func__, __LINE__, current->comm);
 	return err ? : copied;
 }
 
@@ -2162,9 +2156,6 @@ __nlmsg_put(struct sk_buff *skb, u32 portid, u32 seq, int type, int len, int fla
 	nlh->nlmsg_flags = flags;
 	nlh->nlmsg_pid = portid;
 	nlh->nlmsg_seq = seq;
-	printk("%s, %d, type %d, nlk seq %d, comm %s\n",
-	       __func__, __LINE__, nlh->nlmsg_type,
-	       nlh->nlmsg_seq, current->comm);
 	if (!__builtin_constant_p(size) || NLMSG_ALIGN(size) - size != 0)
 		memset(nlmsg_data(nlh) + len, 0, NLMSG_ALIGN(size) - size);
 	return nlh;
@@ -2187,7 +2178,6 @@ static int netlink_dump(struct sock *sk)
 	int alloc_min_size;
 	int alloc_size;
 
-	printk("%s:%d\n", __func__, __LINE__);
 	mutex_lock(nlk->cb_mutex);
 	if (!nlk->cb_running) {
 		err = -EINVAL;
@@ -2228,14 +2218,12 @@ static int netlink_dump(struct sock *sk)
 	 * reasonable static buffer based on the expected largest dump of a
 	 * single netdev. The outcome is MSG_TRUNC error.
 	 */
-	printk("%s:%d\n", __func__, __LINE__);
 	skb_reserve(skb, skb_tailroom(skb) - alloc_size);
 	netlink_skb_set_owner_r(skb, sk);
 
 	if (nlk->dump_done_errno > 0)
 		nlk->dump_done_errno = cb->dump(skb, cb);
 
-	printk("%s:%d, dump %p\n", __func__, __LINE__, cb->dump);
 	if (nlk->dump_done_errno > 0 ||
 	    skb_tailroom(skb) < nlmsg_total_size(sizeof(nlk->dump_done_errno))) {
 		mutex_unlock(nlk->cb_mutex);
@@ -2244,26 +2232,19 @@ static int netlink_dump(struct sock *sk)
 			kfree_skb(skb);
 		else
 			__netlink_sendskb(sk, skb);
-		printk("%s:%d\n", __func__, __LINE__);
 		return 0;
 	}
 
-	printk("%s, %d, type %d, comm %s\n",
-	       __func__, __LINE__, NLMSG_DONE,
-	       current->comm);
-	printk("%s:%d\n", __func__, __LINE__);
 	nlh = nlmsg_put_answer(skb, cb, NLMSG_DONE,
 			       sizeof(nlk->dump_done_errno), NLM_F_MULTI);
 	if (WARN_ON(!nlh))
 		goto errout_skb;
 
-	printk("%s:%d\n", __func__, __LINE__);
 	nl_dump_check_consistent(cb, nlh);
 
 	memcpy(nlmsg_data(nlh), &nlk->dump_done_errno,
 	       sizeof(nlk->dump_done_errno));
 
-	printk("%s:%d\n", __func__, __LINE__);
 	if (sk_filter(sk, skb))
 		kfree_skb(skb);
 	else
@@ -2278,13 +2259,11 @@ static int netlink_dump(struct sock *sk)
 	mutex_unlock(nlk->cb_mutex);
 	module_put(module);
 	consume_skb(skb);
-	printk("%s:%d\n", __func__, __LINE__);
 	return 0;
 
 errout_skb:
 	mutex_unlock(nlk->cb_mutex);
 	kfree_skb(skb);
-	printk("%s:%d\n", __func__, __LINE__);
 	return err;
 }
 
@@ -2329,7 +2308,6 @@ int __netlink_dump_start(struct sock *ssk, struct sk_buff *skb,
 	cb->min_dump_alloc = control->min_dump_alloc;
 	cb->skb = skb;
 
-	printk("%s:%d, start %p dump %p\n", __func__, __LINE__);
 	if (cb->start) {
 		ret = cb->start(cb);
 		if (ret)
@@ -2342,8 +2320,6 @@ int __netlink_dump_start(struct sock *ssk, struct sk_buff *skb,
 	mutex_unlock(nlk->cb_mutex);
 
 	ret = netlink_dump(sk);
-	printk("%s:%d, netlink, err %d\n", __func__, __LINE__,
-	       ret);
 
 	sock_put(sk);
 
@@ -2401,13 +2377,7 @@ void netlink_ack(struct sk_buff *in_skb, struct nlmsghdr *nlh, int err,
 
 	if (tlvlen)
 		flags |= NLM_F_ACK_TLVS;
-	printk("%s, %d, err %d, nlk flags 0x%x, %x, %ld, %ld\n",
-	       __func__, __LINE__,
-	       err, nlk->flags, flags, payload, tlvlen);
 
-
-	printk("%s, %d, err %d, comm %s\n", __func__, __LINE__,
-	       err, current->comm);
 	skb = nlmsg_new(payload + tlvlen, GFP_KERNEL);
 	if (!skb) {
 		NETLINK_CB(in_skb).sk->sk_err = ENOBUFS;
@@ -2465,10 +2435,6 @@ int netlink_rcv_skb(struct sk_buff *skb, int (*cb)(struct sk_buff *,
 
 		if (nlh->nlmsg_len < NLMSG_HDRLEN || skb->len < nlh->nlmsg_len)
 			return 0;
-		printk("%s:%d, task %s, flag %x, len %d, type %d, seq %d\n",
-		       __func__, __LINE__, current->comm,
-		       nlh->nlmsg_flags, nlh->nlmsg_len,
-		       nlh->nlmsg_type, nlh->nlmsg_seq);
 
 		/* Only requests are handled by the kernel */
 		if (!(nlh->nlmsg_flags & NLM_F_REQUEST))
@@ -2479,16 +2445,10 @@ int netlink_rcv_skb(struct sk_buff *skb, int (*cb)(struct sk_buff *,
 			goto ack;
 
 		err = cb(skb, nlh, &extack);
-		printk("%s:%d, task %s, err %d\n",
-		       __func__, __LINE__, current->comm,
-		       err);
 		if (err == -EINTR)
 			goto skip;
 
 ack:
-		printk("%s:%d, netlink, flag %x, err %d, %d\n",
-		       __func__, __LINE__,
-		       nlh->nlmsg_flags, err, nlh->nlmsg_seq);
 		if (nlh->nlmsg_flags & NLM_F_ACK || err)
 			netlink_ack(skb, nlh, err, &extack);
 

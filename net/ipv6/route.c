@@ -4669,7 +4669,6 @@ static int inet6_rtm_getroute(struct sk_buff *in_skb, struct nlmsghdr *nlh,
 	}
 
 	err = rtnl_unicast(skb, net, NETLINK_CB(in_skb).portid);
-	printk("%s, %d, %d\n", __func__, __LINE__, err);
 errout:
 	return err;
 }
